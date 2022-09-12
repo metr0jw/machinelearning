@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -182,7 +182,7 @@ namespace Microsoft.ML.Transforms
             foreach (var column in _columns)
             {
                 if (column.MaximumNumberOfInverts != 0)
-                    throw Host.ExceptParam(nameof(columns), $"Found column with {nameof(column.MaximumNumberOfInverts)} set to non zero value, please use { nameof(HashingEstimator)} instead");
+                    throw Host.ExceptParam(nameof(columns), $"Found column with {nameof(column.MaximumNumberOfInverts)} set to non zero value, please use {nameof(HashingEstimator)} instead");
 
                 if (column.Combine && column.UseOrderedHashing)
                     throw Host.ExceptParam(nameof(HashingEstimator.ColumnOptions.Combine), "When the 'Combine' option is specified, ordered hashing is not supported.");
@@ -342,7 +342,7 @@ namespace Microsoft.ML.Transforms
                     item.Seed ?? options.Seed,
                     item.Ordered ?? options.Ordered,
                     item.MaximumNumberOfInverts ?? options.MaximumNumberOfInverts);
-            };
+            }
             return new HashingTransformer(env, input, cols).MakeDataTransform(input);
         }
 
@@ -1447,7 +1447,7 @@ namespace Microsoft.ML.Transforms
                 }
 
                 opType = "Cast";
-                var input = (_srcTypes[iinfo] is KeyDataViewType) ? mulOutput: addOutput;
+                var input = (_srcTypes[iinfo] is KeyDataViewType) ? mulOutput : addOutput;
                 var castNodeFinal = ctx.CreateNode(opType, input, dstVariable, ctx.GetNodeName(opType), "");
                 castNodeFinal.AddAttribute("to", _dstTypes[iinfo].GetItemType().RawType);
                 return true;

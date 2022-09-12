@@ -46,14 +46,14 @@ namespace Microsoft.ML.Transforms
         private readonly string _modelLocation;
         private readonly bool _isTemporarySavedModel;
         private readonly bool _addBatchDimensionInput;
-        private Session _session;
+        private readonly Session _session;
         private readonly DataViewType[] _outputTypes;
         private readonly TF_DataType[] _tfOutputTypes;
         private readonly TF_DataType[] _tfInputTypes;
         private readonly TensorShape[] _tfInputShapes;
         private readonly (Operation, int)[] _tfInputOperations;
         private readonly (Operation, int)[] _tfOutputOperations;
-        private TF_Output[] _tfInputNodes;
+        private readonly TF_Output[] _tfInputNodes;
         private readonly TF_Output[] _tfOutputNodes;
         private Graph Graph => _session.graph;
         private readonly Dictionary<string, string> _idvToTfMapping;
@@ -116,7 +116,7 @@ namespace Microsoft.ML.Transforms
                     null, false, addBatchDimensionInput, 1);
             }
 
-            var tempDirPath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), nameof(DnnRetrainTransformer) + "_" + Guid.NewGuid()));
+            var tempDirPath = Path.GetFullPath(Path.Combine(((IHostEnvironmentInternal)env).TempFilePath, nameof(DnnRetrainTransformer) + "_" + Guid.NewGuid()));
             CreateFolderWithAclIfNotExists(env, tempDirPath);
             try
             {
@@ -605,7 +605,7 @@ namespace Microsoft.ML.Transforms
         internal static TensorShape GetTensorShape(TF_Output output, Graph graph, Status status = null)
         {
             if (graph == IntPtr.Zero)
-                new ObjectDisposedException(nameof(graph));
+                throw new ObjectDisposedException(nameof(graph));
 
             var cstatus = status == null ? new Status() : status;
             var n = c_api.TF_GraphGetTensorNumDims(graph, output, cstatus.Handle);
@@ -975,7 +975,7 @@ namespace Microsoft.ML.Transforms
             private readonly TensorShape _tfShape;
             private int _position;
             private readonly bool _keyType;
-            private long[] _dims;
+            private readonly long[] _dims;
 
             public TensorValueGetter(DataViewRow input, int colIndex, TensorShape tfShape, bool keyType = false)
             {
@@ -1056,7 +1056,7 @@ namespace Microsoft.ML.Transforms
             private T[] _denseData;
             private T[] _bufferedData;
             private int _position;
-            private long[] _dims;
+            private readonly long[] _dims;
             private readonly long _bufferedDataSize;
 
             public TensorValueGetterVec(DataViewRow input, int colIndex, TensorShape tfShape)

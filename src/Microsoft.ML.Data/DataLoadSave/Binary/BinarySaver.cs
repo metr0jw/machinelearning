@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -107,8 +107,8 @@ namespace Microsoft.ML.Data.IO
 
         private sealed class WritePipe<T> : WritePipe
         {
-            private ValueGetter<T> _getter;
-            private IValueCodec<T> _codec;
+            private readonly ValueGetter<T> _getter;
+            private readonly IValueCodec<T> _codec;
             private IValueWriter<T> _writer;
             private MemoryStream _currentStream;
             private T _value;

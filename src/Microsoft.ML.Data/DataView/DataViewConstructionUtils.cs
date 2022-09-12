@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -84,7 +84,7 @@ namespace Microsoft.ML.Data
                     foreach (var annotation in annotations.Schema)
                     {
                         var info = Utils.MarshalInvoke(_getAnnotationInfoMethodInfo, annotation.Type.RawType, annotation.Name, annotations);
-                        schemaDefinitionCol.AddAnnotation(annotation.Name , info);
+                        schemaDefinitionCol.AddAnnotation(annotation.Name, info);
                     }
                 }
             }
@@ -686,7 +686,7 @@ namespace Microsoft.ML.Data
         internal sealed class StreamingDataView<TRow> : DataViewBase<TRow>
             where TRow : class
         {
-            private IEnumerable<TRow> _data;
+            private readonly IEnumerable<TRow> _data;
 
             public StreamingDataView(IHostEnvironment env, IEnumerable<TRow> data, InternalSchemaDefinition schemaDefn)
                 : base(env, "StreamingDataView", schemaDefn)
@@ -936,7 +936,7 @@ namespace Microsoft.ML.Data
             if (AnnotationType is VectorDataViewType annotationVectorType)
             {
                 // VBuffer<T> -> VBuffer<T>
-                // REVIEW: Do we care about accomodating VBuffer<string> -> VBuffer<ReadOnlyMemory<char>>?
+                // REVIEW: Do we care about accommodating VBuffer<string> -> VBuffer<ReadOnlyMemory<char>>?
 
                 Contracts.Assert(typeT.IsGenericType);
                 Contracts.Check(typeof(TDst).IsGenericType);

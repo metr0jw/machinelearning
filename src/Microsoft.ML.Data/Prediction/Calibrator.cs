@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -521,7 +521,7 @@ namespace Microsoft.ML.Calibrators
             Type genericType = typeof(FeatureWeightsCalibratedModelParameters<,>);
             var genericInstance = CreateCalibratedModelParameters.Create(env, ctx, predictor, calibrator, genericType);
 
-            return (CalibratedModelParametersBase) genericInstance;
+            return (CalibratedModelParametersBase)genericInstance;
         }
 
         void ICanSaveModel.Save(ModelSaveContext ctx)
@@ -542,7 +542,7 @@ namespace Microsoft.ML.Calibrators
     /// Encapsulates a predictor and a calibrator that implement <see cref="IParameterMixer"/>.
     /// Its implementation of <see cref="IParameterMixer.CombineParameters"/> combines both the predictors and the calibrators.
     /// </summary>
-    [PredictionTransformerLoadType(typeof(CalibratedModelParametersBase <,>))]
+    [PredictionTransformerLoadType(typeof(CalibratedModelParametersBase<,>))]
     internal sealed class ParameterMixingCalibratedModelParameters<TSubModel, TCalibrator> :
         ValueMapperCalibratedModelParametersBase<TSubModel, TCalibrator>,
         IParameterMixer<float>,
@@ -598,7 +598,7 @@ namespace Microsoft.ML.Calibrators
             Type genericType = typeof(ParameterMixingCalibratedModelParameters<,>);
             object genericInstance = CreateCalibratedModelParameters.Create(env, ctx, predictor, calibrator, genericType);
 
-            return (CalibratedModelParametersBase) genericInstance;
+            return (CalibratedModelParametersBase)genericInstance;
         }
 
         void ICanSaveModel.Save(ModelSaveContext ctx)
@@ -709,7 +709,7 @@ namespace Microsoft.ML.Calibrators
             }
 
             private Delegate GetPredictorGetter<T>(DataViewRow input, int col)
-                =>input.GetGetter<T>(input.Schema[col]);
+                => input.GetGetter<T>(input.Schema[col]);
 
             private Delegate GetProbGetter(DataViewRow input)
             {
@@ -1069,8 +1069,8 @@ namespace Microsoft.ML.Calibrators
     {
         private readonly IHost _host;
 
-        private List<float> _cMargins;
-        private List<float> _ncMargins;
+        private readonly List<float> _cMargins;
+        private readonly List<float> _ncMargins;
 
         public int NumBins;
         public float BinSize;
@@ -1320,7 +1320,7 @@ namespace Microsoft.ML.Calibrators
 
             opType = "Clip";
             var zeroVar = ctx.AddInitializer(0, "Zero");
-            var numBinsMinusOneVar = ctx.AddInitializer(_binProbs.Length-1, "NumBinsMinusOne");
+            var numBinsMinusOneVar = ctx.AddInitializer(_binProbs.Length - 1, "NumBinsMinusOne");
             var binIndexOutput = ctx.AddIntermediateVariable(NumberDataViewType.Int64, "binIndexOutput");
             node = ctx.CreateNode(opType, new[] { castOutput, zeroVar, numBinsMinusOneVar }, new[] { binIndexOutput }, ctx.GetNodeName(opType), "");
 
@@ -1846,7 +1846,7 @@ namespace Microsoft.ML.Calibrators
     [BestFriend]
     internal sealed class PavCalibratorTrainer : CalibratorTrainerBase
     {
-        // a piece of the piecwise function
+        // a piece of the piecewise function
         private readonly struct Piece
         {
             public readonly float MinX; // end of interval.

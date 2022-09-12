@@ -20,9 +20,9 @@ namespace Microsoft.Data.Analysis
     /// </summary>
     public partial class ArrowStringDataFrameColumn : DataFrameColumn, IEnumerable<string>
     {
-        private IList<ReadOnlyDataFrameBuffer<byte>> _dataBuffers;
-        private IList<ReadOnlyDataFrameBuffer<int>> _offsetsBuffers;
-        private IList<ReadOnlyDataFrameBuffer<byte>> _nullBitMapBuffers;
+        private readonly IList<ReadOnlyDataFrameBuffer<byte>> _dataBuffers;
+        private readonly IList<ReadOnlyDataFrameBuffer<int>> _offsetsBuffers;
+        private readonly IList<ReadOnlyDataFrameBuffer<byte>> _nullBitMapBuffers;
 
         /// <summary>
         /// Constructs an empty <see cref="ArrowStringDataFrameColumn"/> with the given <paramref name="name"/>.
@@ -40,7 +40,7 @@ namespace Microsoft.Data.Analysis
         /// </summary>
         /// <param name="name">The name of the column.</param>
         /// <param name="values">The Arrow formatted string values in this column.</param>
-        /// <param name="offsets">The Arrow formatted offets in this column.</param>
+        /// <param name="offsets">The Arrow formatted offsets in this column.</param>
         /// <param name="nullBits">The Arrow formatted null bits in this column.</param>
         /// <param name="length">The length of the column.</param>
         /// <param name="nullCount">The number of <see langword="null" /> values in this column.</param>
@@ -460,34 +460,42 @@ namespace Microsoft.Data.Analysis
         /// <inheritdoc/>
         public override DataFrame ValueCounts()
         {
-            Dictionary<string, ICollection<long>> groupedValues = GroupColumnValues<string>();
+            Dictionary<string, ICollection<long>> groupedValues = GroupColumnValues<string>(out HashSet<long> _);
             return StringDataFrameColumn.ValueCountsImplementation(groupedValues);
         }
 
         /// <inheritdoc/>
         public override GroupBy GroupBy(int columnIndex, DataFrame parent)
         {
-            Dictionary<string, ICollection<long>> dictionary = GroupColumnValues<string>();
+            Dictionary<string, ICollection<long>> dictionary = GroupColumnValues<string>(out HashSet<long> _);
             return new GroupBy<string>(parent, columnIndex, dictionary);
         }
 
         /// <inheritdoc/>
-        public override Dictionary<TKey, ICollection<long>> GroupColumnValues<TKey>()
+        public override Dictionary<TKey, ICollection<long>> GroupColumnValues<TKey>(out HashSet<long> nullIndices)
         {
             if (typeof(TKey) == typeof(string))
             {
+                nullIndices = new HashSet<long>();
                 Dictionary<string, ICollection<long>> multimap = new Dictionary<string, ICollection<long>>(EqualityComparer<string>.Default);
                 for (long i = 0; i < Length; i++)
                 {
-                    string str = this[i] ?? "__null__";
-                    bool containsKey = multimap.TryGetValue(str, out ICollection<long> values);
-                    if (containsKey)
+                    string str = this[i];
+                    if (str != null)
                     {
-                        values.Add(i);
+                        bool containsKey = multimap.TryGetValue(str, out ICollection<long> values);
+                        if (containsKey)
+                        {
+                            values.Add(i);
+                        }
+                        else
+                        {
+                            multimap.Add(str, new List<long>() { i });
+                        }
                     }
                     else
                     {
-                        multimap.Add(str, new List<long>() { i });
+                        nullIndices.Add(i);
                     }
                 }
                 return multimap as Dictionary<TKey, ICollection<long>>;
@@ -499,7 +507,7 @@ namespace Microsoft.Data.Analysis
         }
 
         /// <inheritdoc/>
-        public ArrowStringDataFrameColumn FillNulls(string value, bool inPlace = false) 
+        public ArrowStringDataFrameColumn FillNulls(string value, bool inPlace = false)
         {
             if (value == null)
             {
@@ -651,6 +659,11 @@ namespace Microsoft.Data.Analysis
                 ret.Append(funcResult != null ? encoding.GetBytes(funcResult) : default(ReadOnlySpan<byte>));
             }
             return ret;
+        }
+
+        public override Dictionary<long, ICollection<long>> GetGroupedOccurrences(DataFrameColumn other, out HashSet<long> otherColumnNullIndices)
+        {
+            return GetGroupedOccurrences<string>(other, out otherColumnNullIndices);
         }
     }
 }

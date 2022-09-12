@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 using System.Linq;
-using Microsoft.ML.Data;
+using System.Text;
 using Microsoft.ML.AutoML.Samples.DataStructures;
+using Microsoft.ML.Data;
 
 namespace Microsoft.ML.AutoML.Samples
 {
@@ -69,7 +69,7 @@ namespace Microsoft.ML.AutoML.Samples
             testPage = new SearchData
             {
                 GroupId = "2",
-                Features = 2, 
+                Features = 2,
                 Label = 9
             };
             prediction = predictionEngine.Predict(testPage);

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,7 +28,7 @@ namespace Microsoft.ML.Internal.CpuMath
         private readonly int _cbAlign; // The alignment in bytes, a power of two, divisible by sizeof(Float).
         private int _base; // Where the values start in Items (changes to ensure alignment).
 
-        private object _lock; // Used to make sure only one thread can re-align the values.
+        private readonly object _lock; // Used to make sure only one thread can re-align the values.
 
         /// <summary>
         /// Allocate an aligned vector with the given alignment (in bytes).

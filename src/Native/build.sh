@@ -53,7 +53,7 @@ while [ "$1" != "" ]; do
         --mkllibrpath)
             shift
             __mkllibrpath=$1
-            ;;          
+            ;;
         --stripsymbols)
             __strip_argument="-DSTRIP_SYMBOLS=true"
             ;;
@@ -74,7 +74,13 @@ mkdir -p "$__IntermediatesDir"
 export __IntermediatesDir=$__IntermediatesDir
 
 # Set up the environment to be used for building with clang.
-if command -v "clang-3.5" > /dev/null 2>&1; then
+if command -v "clang-9" > /dev/null 2>&1; then
+    export CC="$(command -v clang-9)"
+    export CXX="$(command -v clang++-9)"
+elif command -v "clang-6.0" > /dev/null 2>&1; then
+    export CC="$(command -v clang-6.0)"
+    export CXX="$(command -v clang++-6.0)"
+elif command -v "clang-3.5" > /dev/null 2>&1; then
     export CC="$(command -v clang-3.5)"
     export CXX="$(command -v clang++-3.5)"
 elif command -v "clang-3.6" > /dev/null 2>&1; then
@@ -102,6 +108,23 @@ if [ ! -f $__versionSourceFile ]; then
 fi
 
 __cmake_defines="${__cmake_defines} -DVERSION_FILE_PATH:STRING=${__versionSourceFile}"
+
+OS_ARCH=$(uname -m)
+OS=$(uname)
+
+# If we are cross compiling on Linux we need to set the CMAKE_TOOLCHAIN_FILE
+if [[ ( $OS_ARCH == "amd64" || $OS_ARCH == "x86_64" ) && ( $__build_arch == "arm64" || $__build_arch == "arm" ) && $OS != "Darwin" ]] ; then
+    __cmake_defines="${__cmake_defines} -DCMAKE_TOOLCHAIN_FILE=$RootRepo/eng/common/cross/toolchain.cmake"
+    export TARGET_BUILD_ARCH=$__build_arch
+
+# If we are on a Mac we need to let it know the cross architecture to build for.
+# We use x64 for our 64 bit code, but Mac defines it as x86_64.
+elif [[  $OS == "Darwin" && $__build_arch == "x64" ]] ; then
+    __build_arch="x86_64"
+fi
+
+# Set the ARCHITECTURE for all builds
+__cmake_defines="${__cmake_defines} -DARCHITECTURE=${__build_arch}"
 
 cd "$__IntermediatesDir"
 

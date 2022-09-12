@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1194,7 +1194,7 @@ namespace Microsoft.ML.RunTests
             var args = new ExecuteGraphCommand.Arguments() { GraphPath = jsonPath };
             var cmd = new ExecuteGraphCommand(Env, args);
             cmd.Run();
-                        
+
             var mlContext = new MLContext(1);
             var loadedData = mlContext.Data.LoadFromBinary(outputDataPath);
             Assert.NotNull(loadedData.Schema.GetColumnOrNull("FeatureName"));
@@ -1805,7 +1805,8 @@ namespace Microsoft.ML.RunTests
                 if (i % 2 == 0)
                 {
                     data = new TextFeaturizingEstimator(Env, "Features", new List<string> { "Text" },
-                        new TextFeaturizingEstimator.Options {
+                        new TextFeaturizingEstimator.Options
+                        {
                             StopWordsRemoverOptions = new StopWordsRemovingEstimator.Options(),
                         }).Fit(data).Transform(data);
                 }
@@ -2123,7 +2124,7 @@ namespace Microsoft.ML.RunTests
             }
         }
 
-        [Fact]
+        [NativeDependencyFact("MklImports")]
         public void EntryPointPipelineEnsembleGetSummary()
         {
             var dataPath = GetDataPath("breast-cancer-withheader.txt");
@@ -3674,7 +3675,7 @@ namespace Microsoft.ML.RunTests
                         'TrainingData': '$data2',
                         'TestingData': '$TestData',
                         'TransformModel': '$transform',
-                        'Nodes': [                          
+                        'Nodes': [
                           {
                             'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
@@ -3802,7 +3803,7 @@ namespace Microsoft.ML.RunTests
                         'TrainingData': '$data3',
                         'TestingData': '$TestData',
                         'TransformModel': '$CombinedModel',
-                        'Nodes': [                          
+                        'Nodes': [
                           {
                             'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
@@ -3835,7 +3836,7 @@ namespace Microsoft.ML.RunTests
                         'TrainingData': '$data3',
                         'TestingData': '$TestData',
                         'TransformModel': '$CombinedModel',
-                        'Nodes': [                          
+                        'Nodes': [
                           {
                             'Name': 'Trainers.StochasticGradientDescentBinaryClassifier',
                             'Inputs': {
@@ -3964,7 +3965,7 @@ namespace Microsoft.ML.RunTests
                         'TransformModel': '$CombinedModel',
                         'Kind': 'SignatureBinaryClassifierTrainer',
                         'NumFolds': 3,
-                        'Nodes': [                          
+                        'Nodes': [
                           {
                             'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
@@ -4052,7 +4053,7 @@ namespace Microsoft.ML.RunTests
                         'PerInstanceMetrics': '$PerInstanceMetrics2',
                         'ConfusionMatrix': '$ConfusionMatrix2'
                       }
-                    },   
+                    },
                   ]
                 }";
 
@@ -4225,7 +4226,7 @@ namespace Microsoft.ML.RunTests
             }
         }
 
-        [Fact]
+        [NativeDependencyFact("MklImports")]
         public void EntryPointLinearPredictorSummary()
         {
             var dataPath = GetDataPath("breast-cancer-withheader.txt");
@@ -6877,7 +6878,7 @@ namespace Microsoft.ML.RunTests
             runner.RunAll();
 
             var data = runner.GetOutput<IDataView>("overall_metrics");
-            using(var cursor = data.GetRowCursorForAllColumns())
+            using (var cursor = data.GetRowCursorForAllColumns())
             {
                 var ndcgGetter = cursor.GetGetter<VBuffer<Double>>(data.Schema["NDCG"]);
                 VBuffer<Double> ndcgBuffer = default;
@@ -6891,10 +6892,10 @@ namespace Microsoft.ML.RunTests
                 Assert.Equal(10, ndcgArray.Length);
                 Assert.True(ndcgArray[0] > 0);
                 Assert.True(ndcgArray[1] > 0);
-                Assert.True(ndcgArray[2] > 0);                
+                Assert.True(ndcgArray[2] > 0);
                 Assert.True(ndcgArray[3] > 0);
                 Assert.True(ndcgArray[4] > 0);
-                Assert.True(ndcgArray[5] > 0);                
+                Assert.True(ndcgArray[5] > 0);
                 Assert.True(ndcgArray[6] > 0);
                 Assert.True(ndcgArray[7] > 0);
                 Assert.True(ndcgArray[8] > 0);

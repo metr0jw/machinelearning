@@ -28,13 +28,13 @@
     <IsStableProject Condition="'$(StableProjects.IndexOf($(_NormalizedStableProjectName), StringComparison.OrdinalIgnoreCase))' != '-1'">true</IsStableProject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsStableProject)' == 'true'">
-    <MajorVersion>1</MajorVersion>
-    <MinorVersion>5</MinorVersion>
-    <PatchVersion>6</PatchVersion>
+    <MajorVersion>2</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsStableProject)' != 'true'">
     <MajorVersion>0</MajorVersion>
-    <MinorVersion>17</MinorVersion>
-    <PatchVersion>6</PatchVersion>
+    <MinorVersion>20</MinorVersion>
+    <PatchVersion>0</PatchVersion>
   </PropertyGroup>
 </Project>

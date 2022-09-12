@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -338,7 +338,7 @@ namespace Microsoft.ML.Runtime
 
             protected override void Dispose(bool disposing)
             {
-                if(disposing)
+                if (disposing)
                 {
                     Watch.Stop();
                     Root._consoleWriter.ChannelDisposed(this);
@@ -352,7 +352,7 @@ namespace Microsoft.ML.Runtime
         private readonly MessageSensitivity _sensitivityFlags;
 
         // This object is used to write to the test log along with the console if the host process is a test environment
-        private TextWriter _testWriter;
+        private readonly TextWriter _testWriter;
 
         /// <summary>
         /// Create an ML.NET <see cref="IHostEnvironment"/> for local execution, with console feedback.

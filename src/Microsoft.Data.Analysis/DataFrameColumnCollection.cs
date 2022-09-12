@@ -13,11 +13,11 @@ namespace Microsoft.Data.Analysis
     /// </summary>
     public class DataFrameColumnCollection : Collection<DataFrameColumn>
     {
-        private Action ColumnsChanged;
+        private readonly Action ColumnsChanged;
 
-        private List<string> _columnNames = new List<string>();
+        private readonly List<string> _columnNames = new List<string>();
 
-        private Dictionary<string, int> _columnNameToIndexDictionary = new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _columnNameToIndexDictionary = new Dictionary<string, int>(StringComparer.Ordinal);
 
         internal long RowCount { get; set; }
 
@@ -161,7 +161,7 @@ namespace Microsoft.Data.Analysis
                 int columnIndex = IndexOf(columnName);
                 if (columnIndex == -1)
                 {
-                    throw new ArgumentException(Strings.InvalidColumnName, nameof(columnName));
+                    throw new ArgumentException(String.Format(Strings.InvalidColumnName, columnName), nameof(columnName));
                 }
                 return this[columnIndex];
             }

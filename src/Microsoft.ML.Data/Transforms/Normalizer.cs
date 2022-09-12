@@ -543,7 +543,7 @@ namespace Microsoft.ML.Transforms
                 activeCols.Add(data.Schema[srcCols[i]]);
 
                 var supervisedBinColumn = info as NormalizingEstimator.SupervisedBinningColumOptions;
-                if(supervisedBinColumn != null)
+                if (supervisedBinColumn != null)
                     activeCols.Add(data.Schema[supervisedBinColumn.LabelColumnName]);
             }
 
@@ -714,7 +714,7 @@ namespace Microsoft.ML.Transforms
 
         private sealed class Mapper : OneToOneMapperBase, ISaveAsOnnx, ISaveAsPfa
         {
-            private NormalizingTransformer _parent;
+            private readonly NormalizingTransformer _parent;
 
             public bool CanSaveOnnx(OnnxContext ctx) => true;
             public bool CanSavePfa => true;

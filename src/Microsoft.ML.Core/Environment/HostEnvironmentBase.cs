@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -93,7 +93,7 @@ namespace Microsoft.ML.Runtime
     /// query progress.
     /// </summary>
     [BestFriend]
-    internal abstract class HostEnvironmentBase<TEnv> : ChannelProviderBase, ISeededEnvironment, IChannelProvider, ICancelable
+    internal abstract class HostEnvironmentBase<TEnv> : ChannelProviderBase, IHostEnvironmentInternal, IChannelProvider, ICancelable
         where TEnv : HostEnvironmentBase<TEnv>
     {
         void ICancelable.CancelExecution()
@@ -326,6 +326,14 @@ namespace Microsoft.ML.Runtime
             }
         }
 
+#pragma warning disable MSML_NoInstanceInitializers // Need this to have a default value incase the user doesn't set it.
+        public string TempFilePath { get; set; } = System.IO.Path.GetTempPath();
+#pragma warning restore MSML_NoInstanceInitializers
+
+        public int? GpuDeviceId { get; set; }
+
+        public bool FallbackToCpu { get; set; }
+
         protected readonly TEnv Root;
         // This is non-null iff this environment was a fork of another. Disposing a fork
         // doesn't free temp files. That is handled when the master is disposed.
@@ -405,6 +413,13 @@ namespace Microsoft.ML.Runtime
                 _children.RemoveAll(r => r.TryGetTarget(out IHost _) == false);
                 Random rand = (seed.HasValue) ? RandomUtils.Create(seed.Value) : RandomUtils.Create(_rand);
                 host = RegisterCore(this, name, Master?.FullName, rand, verbose ?? Verbose);
+
+                // Need to manually copy over the parameters
+                //((IHostEnvironmentInternal)host).Seed = this.Seed;
+                ((IHostEnvironmentInternal)host).TempFilePath = TempFilePath;
+                ((IHostEnvironmentInternal)host).GpuDeviceId = GpuDeviceId;
+                ((IHostEnvironmentInternal)host).FallbackToCpu = FallbackToCpu;
+
                 _children.Add(new WeakReference<IHost>(host));
             }
             return host;

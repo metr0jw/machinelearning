@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -73,7 +73,7 @@ namespace Microsoft.ML.Sweeper
 
         private OptimizationStage _stage;
         private readonly List<KeyValuePair<ParameterSet, float[]>> _pendingSweeps;
-        private Queue<KeyValuePair<ParameterSet, float[]>> _pendingSweepsNotSubmitted;
+        private readonly Queue<KeyValuePair<ParameterSet, float[]>> _pendingSweepsNotSubmitted;
         private KeyValuePair<IRunResult, float[]> _lastReflectionResult;
 
         private KeyValuePair<IRunResult, float[]> _worst;

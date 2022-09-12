@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="ApprovalTests" Version="5.2.4" />
+    <PackageReference Include="ApprovalTests" Version="$(ApprovalTestsVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -12,9 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="xunit.runner.json">
+    <ContentWithTargetPath Include="ApprovalTests\**\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+      <TargetPath>%(Filename).txt</TargetPath>
+    </ContentWithTargetPath>
   </ItemGroup>
 
   <ItemGroup>

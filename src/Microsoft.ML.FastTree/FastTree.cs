@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -330,8 +330,6 @@ namespace Microsoft.ML.Trainers.FastTree
                 ch.Info(GetTestGraphHeader());
             else
                 ch.Info(GetTestGraphLine());
-
-            return;
         }
 
         private protected virtual void Initialize(IChannel ch)
@@ -649,6 +647,8 @@ namespace Microsoft.ML.Trainers.FastTree
                 pch.SetHeader(new ProgressHeader("trees"), e => e.SetProgress(0, Ensemble.NumTrees, numTotalTrees));
                 while (Ensemble.NumTrees < numTotalTrees)
                 {
+                    ch.Trace($"numTotalTrees left: {numTotalTrees}");
+                    Host.CheckAlive();
                     using (Timer.Time(TimerEvent.Iteration))
                     {
 #if NO_STORE
@@ -689,6 +689,7 @@ namespace Microsoft.ML.Trainers.FastTree
                                     baggingProvider.GetCurrentOutOfBagPartition().Documents);
                         }
 
+                        Host.CheckAlive();
                         CustomizedTrainingIteration(tree);
 
                         using (Timer.Time(TimerEvent.Test))
@@ -740,6 +741,7 @@ namespace Microsoft.ML.Trainers.FastTree
                 }
             }
 
+            Host.CheckAlive();
             if (earlyStoppingRule != null)
             {
                 Contracts.Assert(numTotalTrees == 0 || bestIteration > 0);
@@ -752,8 +754,13 @@ namespace Microsoft.ML.Trainers.FastTree
                 bestIteration = GetBestIteration(ch);
             }
 
+            Host.CheckAlive();
             OptimizationAlgorithm.FinalizeLearning(bestIteration);
+
+            Host.CheckAlive();
             Ensemble.PopulateRawThresholds(TrainSet);
+
+            Host.CheckAlive();
             ParallelTraining.FinalizeTreeLearner();
         }
 
@@ -2618,7 +2625,7 @@ namespace Microsoft.ML.Trainers.FastTree
 #if DEBUG
                 // Holds for each feature the row index that it was previously accessed on.
                 // Purely for validation purposes.
-                private int[] _lastRow;
+                private readonly int[] _lastRow;
 #endif
 
                 /// <summary>
@@ -3120,7 +3127,7 @@ namespace Microsoft.ML.Trainers.FastTree
         }
         bool ISingleCanSaveOnnx.SaveAsOnnx(OnnxContext ctx, string[] outputNames, string featureColumn)
         {
-            return SaveAsOnnx(ctx,outputNames,featureColumn);
+            return SaveAsOnnx(ctx, outputNames, featureColumn);
         }
 
         void ICanSaveSummary.SaveSummary(TextWriter writer, RoleMappedSchema schema)

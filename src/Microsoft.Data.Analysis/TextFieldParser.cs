@@ -22,12 +22,12 @@ namespace Microsoft.Data.Analysis
 
     internal class QuoteDelimitedFieldBuilder
     {
-        private StringBuilder _field;
+        private readonly StringBuilder _field;
         private bool _fieldFinished;
         private int _index;
         private int _delimiterLength;
-        private Regex _delimiterRegex;
-        private string _spaceChars;
+        private readonly Regex _delimiterRegex;
+        private readonly string _spaceChars;
         private bool _malformedLine;
 
         public QuoteDelimitedFieldBuilder(Regex delimiterRegex, string spaceChars)
@@ -148,7 +148,7 @@ namespace Microsoft.Data.Analysis
 
         private Regex _delimiterWithEndCharsRegex;
 
-        private int[] _whitespaceCodes = new int[] { '\u0009', '\u000B', '\u000C', '\u0020', '\u0085', '\u00A0', '\u1680', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u200B', '\u2028', '\u2029', '\u3000', '\uFEFF' };
+        private readonly int[] _whitespaceCodes = new int[] { '\u0009', '\u000B', '\u000C', '\u0020', '\u0085', '\u00A0', '\u1680', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u200B', '\u2028', '\u2029', '\u3000', '\uFEFF' };
 
         private Regex _beginQuotesRegex;
 
@@ -172,13 +172,13 @@ namespace Microsoft.Data.Analysis
 
         private string _spaceChars;
 
-        private int _maxLineSize = 10000000;
+        private readonly int _maxLineSize = 10000000;
 
-        private int _maxBufferSize = 10000000;
+        private readonly int _maxBufferSize = 10000000;
 
-        private bool _leaveOpen;
+        private readonly bool _leaveOpen;
 
-        private char[] newLineChars = Environment.NewLine.ToCharArray();
+        private readonly char[] _newLineChars = Environment.NewLine.ToCharArray();
 
         public string[] CommentTokens
         {
@@ -199,7 +199,7 @@ namespace Microsoft.Data.Analysis
                 {
                     return _endOfData;
                 }
-                if ((_reader == null) | (_buffer == null))
+                if ((_reader == null) || (_buffer == null))
                 {
                     _endOfData = true;
                     return true;
@@ -217,7 +217,7 @@ namespace Microsoft.Data.Analysis
         {
             get
             {
-                if (_lineNumber != -1 && ((_reader.Peek() == -1) & (_position == _charsRead)))
+                if (_lineNumber != -1 && ((_reader.Peek() == -1) && (_position == _charsRead)))
                 {
                     // Side effect of a property. Not great. Just leaving it in for now.
                     CloseReader();
@@ -405,7 +405,7 @@ namespace Microsoft.Data.Analysis
 
         public string ReadLine()
         {
-            if ((_reader == null) | (_buffer == null))
+            if ((_reader == null) || (_buffer == null))
             {
                 return null;
             }
@@ -419,12 +419,12 @@ namespace Microsoft.Data.Analysis
             }
 
             _lineNumber++;
-            return line.TrimEnd(newLineChars);
+            return line.TrimEnd(_newLineChars);
         }
 
         public string[] ReadFields()
         {
-            if ((_reader == null) | (_buffer == null))
+            if ((_reader == null) || (_buffer == null))
             {
                 return null;
             }
@@ -453,7 +453,7 @@ namespace Microsoft.Data.Analysis
                 throw new ArgumentException(string.Format(Strings.PositiveNumberOfCharacters, nameof(numberOfChars)));
             }
 
-            if ((_reader == null) | (_buffer == null))
+            if ((_reader == null) || (_buffer == null))
             {
                 return null;
             }
@@ -470,7 +470,7 @@ namespace Microsoft.Data.Analysis
                 return null;
             }
 
-            line = line.TrimEnd(newLineChars);
+            line = line.TrimEnd(_newLineChars);
             if (line.Length < numberOfChars)
             {
                 return line;
@@ -482,7 +482,7 @@ namespace Microsoft.Data.Analysis
 
         public string ReadToEnd()
         {
-            if ((_reader == null) | (_buffer == null))
+            if ((_reader == null) || (_buffer == null))
             {
                 return null;
             }
@@ -642,7 +642,7 @@ namespace Microsoft.Data.Analysis
         {
             Debug.Assert(_buffer != null, "There's no buffer");
             Debug.Assert(_reader != null, "There's no StreamReader");
-            Debug.Assert((_position >= 0) & (_position <= _buffer.Length), "The cursor is out of range");
+            Debug.Assert((_position >= 0) && (_position <= _buffer.Length), "The cursor is out of range");
             if (_position > 0)
             {
                 int bufferLength = _buffer.Length;
@@ -710,7 +710,7 @@ namespace Microsoft.Data.Analysis
         private string ReadNextLine(ref int cursor, ChangeBufferFunction changeBuffer)
         {
             Debug.Assert(_buffer != null, "There's no buffer");
-            Debug.Assert((cursor >= 0) & (cursor <= _charsRead), "The cursor is out of range");
+            Debug.Assert((cursor >= 0) && (cursor <= _charsRead), "The cursor is out of range");
             if (cursor == _charsRead && changeBuffer() == 0)
             {
                 return null;
@@ -722,7 +722,7 @@ namespace Microsoft.Data.Analysis
                 for (int i = cursor; i <= _charsRead - 1; i++)
                 {
                     char Character = _buffer[i];
-                    if (!(Character.Equals('\r') | Character.Equals('\n')))
+                    if (!(Character.Equals('\r') || Character.Equals('\n')))
                     {
                         continue;
                     }
@@ -799,7 +799,7 @@ namespace Microsoft.Data.Analysis
                     endHelper.BuildField(line, index);
                     if (endHelper.MalformedLine)
                     {
-                        _errorLine = line.TrimEnd(newLineChars);
+                        _errorLine = line.TrimEnd(_newLineChars);
                         _errorLineNumber = currentLineNumber;
                         throw new Exception(string.Format(Strings.CannotParseWithDelimiters, currentLineNumber));
                     }
@@ -817,13 +817,13 @@ namespace Microsoft.Data.Analysis
                             string newLine = ReadNextDataLine();
                             if (newLine == null)
                             {
-                                _errorLine = line.TrimEnd(newLineChars);
+                                _errorLine = line.TrimEnd(_newLineChars);
                                 _errorLineNumber = currentLineNumber;
                                 throw new Exception(string.Format(Strings.CannotParseWithDelimiters, currentLineNumber));
                             }
                             if (line.Length + newLine.Length > _maxLineSize)
                             {
-                                _errorLine = line.TrimEnd(newLineChars);
+                                _errorLine = line.TrimEnd(_newLineChars);
                                 _errorLineNumber = currentLineNumber;
                                 throw new Exception(string.Format(Strings.LineExceedsMaxLineSize, currentLineNumber));
                             }
@@ -832,7 +832,7 @@ namespace Microsoft.Data.Analysis
                             endHelper.BuildField(line, endOfLine);
                             if (endHelper.MalformedLine)
                             {
-                                _errorLine = line.TrimEnd(newLineChars);
+                                _errorLine = line.TrimEnd(_newLineChars);
                                 _errorLineNumber = currentLineNumber;
                                 throw new Exception(string.Format(Strings.CannotParseWithDelimiters, currentLineNumber));
                             }
@@ -862,7 +862,7 @@ namespace Microsoft.Data.Analysis
                     index = delimiterMatch.Index + delimiterMatch.Length;
                     continue;
                 }
-                field = line.Substring(index).TrimEnd(newLineChars);
+                field = line.Substring(index).TrimEnd(_newLineChars);
                 if (_trimWhiteSpace)
                 {
                     field = field.Trim();
@@ -881,7 +881,7 @@ namespace Microsoft.Data.Analysis
             {
                 return null;
             }
-            line = line.TrimEnd(newLineChars);
+            line = line.TrimEnd(_newLineChars);
             StringInfo lineInfo = new StringInfo(line);
             ValidateFixedWidthLine(lineInfo, _lineNumber - 1);
             int index = 0;
@@ -897,7 +897,7 @@ namespace Microsoft.Data.Analysis
 
         private string GetFixedWidthField(StringInfo line, int index, int fieldLength)
         {
-            string field = (fieldLength > 0) ? line.SubstringByTextElements(index, fieldLength) : ((index < line.LengthInTextElements) ? line.SubstringByTextElements(index).TrimEnd(newLineChars) : string.Empty);
+            string field = (fieldLength > 0) ? line.SubstringByTextElements(index, fieldLength) : ((index < line.LengthInTextElements) ? line.SubstringByTextElements(index).TrimEnd(_newLineChars) : string.Empty);
             if (_trimWhiteSpace)
             {
                 return field.Trim();
@@ -912,16 +912,16 @@ namespace Microsoft.Data.Analysis
             Debug.Assert(length > 0, "A blank line shouldn't be parsed");
             if (length == 1)
             {
-                Debug.Assert(!line[0].Equals('\r') & !line[0].Equals('\n'), "A blank line shouldn't be parsed");
+                Debug.Assert(!line[0].Equals('\r') && !line[0].Equals('\n'), "A blank line shouldn't be parsed");
                 return length;
             }
             checked
             {
-                if (line[length - 2].Equals('\r') | line[length - 2].Equals('\n'))
+                if (line[length - 2].Equals('\r') || line[length - 2].Equals('\n'))
                 {
                     return length - 2;
                 }
-                if (line[length - 1].Equals('\r') | line[length - 1].Equals('\n'))
+                if (line[length - 1].Equals('\r') || line[length - 1].Equals('\n'))
                 {
                     return length - 1;
                 }
@@ -1020,7 +1020,7 @@ namespace Microsoft.Data.Analysis
 
         private void ValidateReadyToRead()
         {
-            if (!(_needPropertyCheck | ArrayHasChanged()))
+            if (!(_needPropertyCheck || ArrayHasChanged()))
             {
                 return;
             }
@@ -1041,7 +1041,7 @@ namespace Microsoft.Data.Analysis
                 string[] commentTokens = _commentTokens;
                 foreach (string token in commentTokens)
                 {
-                    if (token != string.Empty && (_hasFieldsEnclosedInQuotes & (_textFieldType == FieldType.Delimited)) && string.Compare(token.Trim(), "\"", StringComparison.Ordinal) == 0)
+                    if (token != string.Empty && (_hasFieldsEnclosedInQuotes && (_textFieldType == FieldType.Delimited)) && string.Compare(token.Trim(), "\"", StringComparison.Ordinal) == 0)
                     {
                         throw new Exception(Strings.IllegalQuoteDelimiter);
                     }
@@ -1062,7 +1062,7 @@ namespace Microsoft.Data.Analysis
                 {
                     throw new Exception(Strings.EmptyDelimiters);
                 }
-                if (delimiter.IndexOfAny(newLineChars) > -1)
+                if (delimiter.IndexOfAny(_newLineChars) > -1)
                 {
                     throw new Exception(Strings.DelimiterCannotBeNewlineChar);
                 }
@@ -1077,7 +1077,7 @@ namespace Microsoft.Data.Analysis
             {
                 case FieldType.Delimited:
                     {
-                        Debug.Assert(((_delimitersCopy == null) & (_delimiters == null)) | ((_delimitersCopy != null) & (_delimiters != null)), "Delimiters and copy are not both Nothing or both not Nothing");
+                        Debug.Assert(((_delimitersCopy == null) && (_delimiters == null)) || ((_delimitersCopy != null) && (_delimiters != null)), "Delimiters and copy are not both Nothing or both not Nothing");
                         if (_delimiters == null)
                         {
                             return false;
@@ -1097,7 +1097,7 @@ namespace Microsoft.Data.Analysis
                     }
                 case FieldType.FixedWidth:
                     {
-                        Debug.Assert(((_fieldWidthsCopy == null) & (_fieldWidths == null)) | ((_fieldWidthsCopy != null) & (_fieldWidths != null)), "FieldWidths and copy are not both Nothing or both not Nothing");
+                        Debug.Assert(((_fieldWidthsCopy == null) && (_fieldWidths == null)) || ((_fieldWidthsCopy != null) && (_fieldWidths != null)), "FieldWidths and copy are not both Nothing or both not Nothing");
                         if (_fieldWidths == null)
                         {
                             return false;

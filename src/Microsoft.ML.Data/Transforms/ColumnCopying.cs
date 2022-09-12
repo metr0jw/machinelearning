@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -244,9 +244,10 @@ namespace Microsoft.ML.Transforms
 
                 foreach (var column in _columns)
                 {
-                    var srcVariableName = ctx.GetVariableName(column.inputColumnName);
-                    if (!ctx.ContainsColumn(srcVariableName))
+                    if (!ctx.ContainsColumn(column.inputColumnName))
                         continue;
+
+                    var srcVariableName = ctx.GetVariableName(column.inputColumnName);
                     _schema.TryGetColumnIndex(column.inputColumnName, out int colIndex);
                     var dstVariableName = ctx.AddIntermediateVariable(_schema[colIndex].Type, column.outputColumnName);
                     var node = ctx.CreateNode(opType, srcVariableName, dstVariableName, ctx.GetNodeName(opType), "");

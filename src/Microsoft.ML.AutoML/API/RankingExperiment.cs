@@ -1,4 +1,4 @@
-﻿// Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -35,6 +35,9 @@ namespace Microsoft.ML.AutoML
         /// </value>
         public uint OptimizationMetricTruncationLevel { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="RankingExperimentSettings"/>.
+        /// </summary>
         public RankingExperimentSettings()
         {
             OptimizingMetric = RankingMetric.Ndcg;

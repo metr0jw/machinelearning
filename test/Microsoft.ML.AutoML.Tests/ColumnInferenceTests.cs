@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,7 +18,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.ML.AutoML.Test
 {
-    
+
     public class ColumnInferenceTests : BaseTestClass
     {
         public ColumnInferenceTests(ITestOutputHelper output) : base(output)
@@ -136,7 +140,7 @@ namespace Microsoft.ML.AutoML.Test
             var labelColumn = result.TextLoaderOptions.Columns.First(c => c.Name == DefaultColumnNames.Label);
             Assert.Equal(DataKind.String, nameColumn.DataKind);
             Assert.Equal(DataKind.Boolean, labelColumn.DataKind);
-            
+
             Assert.Single(result.ColumnInformation.TextColumnNames);
             Assert.Equal("Username", result.ColumnInformation.TextColumnNames.First());
             Assert.Equal(DefaultColumnNames.Label, result.ColumnInformation.LabelColumnName);
@@ -154,7 +158,7 @@ namespace Microsoft.ML.AutoML.Test
                     UserIdColumnName = DefaultColumnNames.User,
                     ItemIdColumnName = DefaultColumnNames.Item,
                 },
-                groupColumns : false);
+                groupColumns: false);
 
             Assert.Equal(DefaultColumnNames.Label, result.ColumnInformation.LabelColumnName);
             Assert.Equal(DefaultColumnNames.Weight, result.ColumnInformation.ExampleWeightColumnName);
@@ -232,6 +236,12 @@ namespace Microsoft.ML.AutoML.Test
         [UseApprovalSubdirectory("ApprovalTests")]
         public void Wiki_column_inference_result_should_be_serializable()
         {
+            // DiffEngine can't check for Helix, so the environment variable checks for helix.
+            if (Environment.GetEnvironmentVariable("HELIX_CORRELATION_ID") != null)
+            {
+                Approvals.UseAssemblyLocationForApprovedFiles();
+            }
+
             var wiki = Path.Combine("TestData", "wiki-column-inference.json");
             using (var stream = new StreamReader(wiki))
             {

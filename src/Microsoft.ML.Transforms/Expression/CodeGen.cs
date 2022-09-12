@@ -22,9 +22,9 @@ namespace Microsoft.ML.Transforms
     {
         public const int MaxParams = 16;
 
-        private LambdaNode _top;
-        private Type _delType;
-        private MethodGenerator _meth;
+        private readonly LambdaNode _top;
+        private readonly Type _delType;
+        private readonly MethodGenerator _meth;
 
         public static Delegate Compile(out List<Error> errors, LambdaNode node)
         {
@@ -37,7 +37,7 @@ namespace Microsoft.ML.Transforms
         private LambdaCompiler(LambdaNode node)
         {
             Contracts.AssertValue(node);
-            Contracts.Assert(1 <= node.Vars.Length & node.Vars.Length <= MaxParams);
+            Contracts.Assert(1 <= node.Vars.Length && node.Vars.Length <= MaxParams);
             Contracts.Assert(MaxParams <= 16);
             Contracts.AssertValue(node.ResultType);
 
@@ -63,7 +63,7 @@ namespace Microsoft.ML.Transforms
             var types = new Type[node.Vars.Length + 1];
             foreach (var v in node.Vars)
             {
-                Contracts.Assert(0 <= v.Index & v.Index < node.Vars.Length);
+                Contracts.Assert(0 <= v.Index && v.Index < node.Vars.Length);
                 Contracts.Assert(types[v.Index] == null);
                 types[v.Index] = v.Type.RawType;
             }
@@ -102,8 +102,8 @@ namespace Microsoft.ML.Transforms
             private static readonly MethodInfo _methGetFalseBL = ((Func<BL>)BuiltinFunctions.False).GetMethodInfo();
             private static readonly MethodInfo _methGetTrueBL = ((Func<BL>)BuiltinFunctions.True).GetMethodInfo();
 
-            private MethodGenerator _meth;
-            private ILGenerator _gen;
+            private readonly MethodGenerator _meth;
+            private readonly ILGenerator _gen;
             private List<Error> _errors;
 
             private sealed class CachedWithLocal
@@ -135,7 +135,7 @@ namespace Microsoft.ML.Transforms
             // the value has been computed and stored yet. Lazy computed values avoid potentially
             // expensive computation that might not be needed, but result in code bloat since each
             // use tests the flag, and if false, computes and stores the value.
-            private List<CachedWithLocal> _cacheWith;
+            private readonly List<CachedWithLocal> _cacheWith;
 
             public Visitor(MethodGenerator meth)
             {
@@ -355,7 +355,7 @@ namespace Microsoft.ML.Transforms
                         }
                         else
                         {
-                            Contracts.Assert(0 <= loc.Index & loc.Index < _cacheWith.Count);
+                            Contracts.Assert(0 <= loc.Index && loc.Index < _cacheWith.Count);
                             var cache = _cacheWith[loc.Index];
                             Contracts.Assert(cache.Value != null);
                             if (cache.Flag != null)
@@ -745,7 +745,7 @@ namespace Microsoft.ML.Transforms
                 _gen.Br(labEnd);
                 _gen.MarkLabel(labEnd);
 
-            LDone:
+LDone:
                 DoConvert(node);
                 return false;
             }
@@ -903,7 +903,7 @@ namespace Microsoft.ML.Transforms
                     {
                         // NotEqual is special - it means that the values are all distinct, so comparing adjacent
                         // items is not enough.
-                        Contracts.Assert(node.Op == CompareOp.NotEqual & items.Length > 2);
+                        Contracts.Assert(node.Op == CompareOp.NotEqual && items.Length > 2);
 
                         // We need a local for each item.
                         var locals = new MethodGenerator.Temporary[items.Length];

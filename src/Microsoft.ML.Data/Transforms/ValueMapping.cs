@@ -186,7 +186,7 @@ namespace Microsoft.ML.Transforms
     internal class DataViewHelper
     {
         /// <summary>
-        /// Helper function to retrieve the Primitie type given a Type
+        /// Helper function to retrieve the Primitive type given a Type
         /// </summary>
         internal static PrimitiveDataViewType GetPrimitiveType(Type rawType, out bool isVectorType)
         {
@@ -359,7 +359,7 @@ namespace Microsoft.ML.Transforms
         private const string DefaultMapName = "DefaultMap.idv";
         internal static string DefaultKeyColumnName = "Key";
         internal static string DefaultValueColumnName = "Value";
-        private ValueMap _valueMap;
+        private readonly ValueMap _valueMap;
         private readonly byte[] _dataView;
 
         internal DataViewType ValueColumnType => _valueMap.ValueColumn.Type;
@@ -834,7 +834,7 @@ namespace Microsoft.ML.Transforms
             private static readonly FuncStaticMethodInfo1<TValue, TValue> _getValueMethodInfo
                 = new FuncStaticMethodInfo1<TValue, TValue>(GetValue<int>);
 
-            private Dictionary<TKey, TValue> _mapping;
+            private readonly Dictionary<TKey, TValue> _mapping;
             private TValue _missingValue;
 
             private Dictionary<TKey, TValue> CreateDictionary()
@@ -1070,9 +1070,9 @@ namespace Microsoft.ML.Transforms
                     var type = _inputSchema[colSrc].Type;
                     DataViewType colType;
                     if (type is VectorDataViewType vectorType)
-                      colType = new VectorDataViewType((PrimitiveDataViewType)_parent.ValueColumnType, vectorType.Dimensions);
+                        colType = new VectorDataViewType((PrimitiveDataViewType)_parent.ValueColumnType, vectorType.Dimensions);
                     else
-                      colType = _parent.ValueColumnType;
+                        colType = _parent.ValueColumnType;
                     string dstVariableName = ctx.AddIntermediateVariable(colType, outputColumnName);
                     if (!ctx.ContainsColumn(inputColumnName))
                         continue;
@@ -1112,7 +1112,7 @@ namespace Microsoft.ML.Transforms
 
                 var labelEncoderOutput = (typeValue == NumberDataViewType.Single || typeValue == TextDataViewType.Instance || typeValue == NumberDataViewType.Int64) ? dstVariableName :
                     (typeValue == NumberDataViewType.Double || typeValue == BooleanDataViewType.Instance) ? ctx.AddIntermediateVariable(new VectorDataViewType(NumberDataViewType.Single, (int)srcShape[1]), "LabelEncoderOutput") :
-                    ctx.AddIntermediateVariable(new VectorDataViewType(NumberDataViewType.Int64, (int) srcShape[1]), "LabelEncoderOutput");
+                    ctx.AddIntermediateVariable(new VectorDataViewType(NumberDataViewType.Int64, (int)srcShape[1]), "LabelEncoderOutput");
 
                 // The LabelEncoder operator doesn't support mappings between the same type and only supports mappings between int64s, floats, and strings.
                 // As a result, we need to cast most inputs and outputs. In order to avoid as many unsupported mappings, we cast keys that are of NumberDataTypeView

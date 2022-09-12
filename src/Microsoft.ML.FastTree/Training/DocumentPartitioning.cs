@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,7 +22,7 @@ namespace Microsoft.ML.Trainers.FastTree
         private readonly int[] _leafCount;
         private readonly int[] _documents;
         private int[] _tempDocuments;
-        private int[] _initialDocuments;
+        private readonly int[] _initialDocuments;
 
         /// <summary>
         /// Constructor

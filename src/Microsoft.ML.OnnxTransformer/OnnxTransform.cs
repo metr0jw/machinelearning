@@ -87,6 +87,15 @@ namespace Microsoft.ML.Transforms.Onnx
 
             [Argument(ArgumentType.Multiple, HelpText = "Shapes used to overwrite shapes loaded from ONNX file.", SortOrder = 5)]
             public CustomShapeInfo[] CustomShapeInfos;
+
+            [Argument(ArgumentType.AtMostOnce, HelpText = "Protobuf CodedInputStream recursion limit.", SortOrder = 6)]
+            public int RecursionLimit = 100;
+
+            [Argument(ArgumentType.AtMostOnce, HelpText = "Controls the number of threads used to parallelize the execution of the graph (across nodes).", SortOrder = 7)]
+            public int? InterOpNumThreads = null;
+
+            [Argument(ArgumentType.AtMostOnce, HelpText = "Controls the number of threads to use to run the model.", SortOrder = 8)]
+            public int? IntraOpNumThreads = null;
         }
 
         /// <summary>
@@ -126,8 +135,9 @@ namespace Microsoft.ML.Transforms.Onnx
                 modelSignature: "ONNXSCOR",
                 // version 10001 is single input & output.
                 // version 10002 = multiple inputs & outputs
-                verWrittenCur: 0x00010002,
-                verReadableCur: 0x00010002,
+                // version 10003 = custom protobuf recursion limit
+                verWrittenCur: 0x00010003,
+                verReadableCur: 0x00010003,
                 verWeCanReadBack: 0x00010001,
                 loaderSignature: LoaderSignature,
             loaderAssemblyName: typeof(OnnxTransformer).Assembly.FullName);
@@ -184,7 +194,33 @@ namespace Microsoft.ML.Transforms.Onnx
                 }
             }
 
-            var options = new Options() { InputColumns = inputs, OutputColumns = outputs, CustomShapeInfos = loadedCustomShapeInfos };
+            int recursionLimit;
+
+            // Recursion limit change
+            if (ctx.Header.ModelVerWritten >= 0x00010003)
+            {
+                recursionLimit = ctx.Reader.ReadInt32();
+            }
+            else
+            {
+                // Default if not written inside ONNX model
+                recursionLimit = 100;
+            }
+
+            var options = new Options()
+            {
+                InputColumns = inputs,
+                OutputColumns = outputs,
+                CustomShapeInfos = loadedCustomShapeInfos,
+                RecursionLimit = recursionLimit
+            };
+
+            IHostEnvironmentInternal localEnvironment = env as IHostEnvironmentInternal;
+            if (localEnvironment is not null)
+            {
+                options.GpuDeviceId = localEnvironment.GpuDeviceId;
+                options.FallbackToCpu = localEnvironment.FallbackToCpu;
+            }
 
             return new OnnxTransformer(env, options, modelBytes);
         }
@@ -207,7 +243,7 @@ namespace Microsoft.ML.Transforms.Onnx
             // internal functions. If nothing is provided, shapeDictionary is null.
             var shapeDictionary = new Dictionary<string, int[]>();
             if (options.CustomShapeInfos != null)
-                foreach(var customShape in options.CustomShapeInfos)
+                foreach (var customShape in options.CustomShapeInfos)
                     shapeDictionary[customShape.Name] = customShape.Shape;
 
             // Use ONNXRuntime to figure out the right input and output configuration.
@@ -221,18 +257,19 @@ namespace Microsoft.ML.Transforms.Onnx
                     Host.CheckNonWhiteSpace(options.ModelFile, nameof(options.ModelFile));
                     Host.CheckIO(File.Exists(options.ModelFile), "Model file {0} does not exists.", options.ModelFile);
                     // Because we cannot delete the user file, ownModelFile should be false.
-                    Model = new OnnxModel(options.ModelFile, options.GpuDeviceId, options.FallbackToCpu, ownModelFile: false, shapeDictionary: shapeDictionary);
+                    Model = new OnnxModel(options.ModelFile, options.GpuDeviceId, options.FallbackToCpu, ownModelFile: false, shapeDictionary: shapeDictionary, options.RecursionLimit,
+                        options.InterOpNumThreads, options.IntraOpNumThreads);
                 }
                 else
                 {
                     // Entering this region means that the byte[] is passed as the model. To feed that byte[] to ONNXRuntime, we need
                     // to create a temporal file to store it and then call ONNXRuntime's API to load that file.
-                    Model = OnnxModel.CreateFromBytes(modelBytes, options.GpuDeviceId, options.FallbackToCpu, shapeDictionary: shapeDictionary);
+                    Model = OnnxModel.CreateFromBytes(modelBytes, env, options.GpuDeviceId, options.FallbackToCpu, shapeDictionary: shapeDictionary, options.RecursionLimit);
                 }
             }
             catch (OnnxRuntimeException e)
             {
-                 throw Host.Except(e, $"Error initializing model :{e.ToString()}");
+                throw Host.Except(e, $"Error initializing model :{e.ToString()}");
             }
 
             var modelInfo = Model.ModelInfo;
@@ -258,8 +295,9 @@ namespace Microsoft.ML.Transforms.Onnx
         /// <param name="gpuDeviceId">Optional GPU device ID to run execution on. Null for CPU.</param>
         /// <param name="fallbackToCpu">If GPU error, raise exception or fallback to CPU.</param>
         /// <param name="shapeDictionary"></param>
+        /// <param name="recursionLimit">Optional, specifies the Protobuf CodedInputStream recursion limit. Default value is 100.</param>
         internal OnnxTransformer(IHostEnvironment env, string modelFile, int? gpuDeviceId = null,
-            bool fallbackToCpu = false, IDictionary<string, int[]> shapeDictionary = null)
+            bool fallbackToCpu = false, IDictionary<string, int[]> shapeDictionary = null, int recursionLimit = 100)
             : this(env, new Options()
             {
                 ModelFile = modelFile,
@@ -267,7 +305,8 @@ namespace Microsoft.ML.Transforms.Onnx
                 OutputColumns = new string[] { },
                 GpuDeviceId = gpuDeviceId,
                 FallbackToCpu = fallbackToCpu,
-                CustomShapeInfos = shapeDictionary?.Select(pair => new CustomShapeInfo(pair.Key, pair.Value)).ToArray()
+                CustomShapeInfos = shapeDictionary?.Select(pair => new CustomShapeInfo(pair.Key, pair.Value)).ToArray(),
+                RecursionLimit = recursionLimit
             })
         {
         }
@@ -283,8 +322,12 @@ namespace Microsoft.ML.Transforms.Onnx
         /// <param name="gpuDeviceId">Optional GPU device ID to run execution on. Null for CPU.</param>
         /// <param name="fallbackToCpu">If GPU error, raise exception or fallback to CPU.</param>
         /// <param name="shapeDictionary"></param>
+        /// <param name="recursionLimit">Optional, specifies the Protobuf CodedInputStream recursion limit. Default value is 100.</param>
+        /// <param name="interOpNumThreads">Controls the number of threads used to parallelize the execution of the graph (across nodes).</param>
+        /// <param name="intraOpNumThreads">Controls the number of threads to use to run the model.</param>
         internal OnnxTransformer(IHostEnvironment env, string[] outputColumnNames, string[] inputColumnNames, string modelFile, int? gpuDeviceId = null, bool fallbackToCpu = false,
-             IDictionary<string, int[]> shapeDictionary = null)
+            IDictionary<string, int[]> shapeDictionary = null, int recursionLimit = 100,
+            int? interOpNumThreads = null, int? intraOpNumThreads = null)
             : this(env, new Options()
             {
                 ModelFile = modelFile,
@@ -292,7 +335,10 @@ namespace Microsoft.ML.Transforms.Onnx
                 OutputColumns = outputColumnNames,
                 GpuDeviceId = gpuDeviceId,
                 FallbackToCpu = fallbackToCpu,
-                CustomShapeInfos = shapeDictionary?.Select(pair => new CustomShapeInfo(pair.Key, pair.Value)).ToArray()
+                CustomShapeInfos = shapeDictionary?.Select(pair => new CustomShapeInfo(pair.Key, pair.Value)).ToArray(),
+                RecursionLimit = recursionLimit,
+                InterOpNumThreads = interOpNumThreads,
+                IntraOpNumThreads = intraOpNumThreads
             })
         {
         }
@@ -304,7 +350,7 @@ namespace Microsoft.ML.Transforms.Onnx
             ctx.CheckAtModel();
             ctx.SetVersionInfo(GetVersionInfo());
 
-            ctx.SaveBinaryStream("OnnxModel", w => { w.WriteByteArray(File.ReadAllBytes(Model.ModelFile)); });
+            ctx.SaveBinaryStream("OnnxModel", w => { w.WriteByteArray(File.ReadAllBytes(Model.ModelStream.Name)); });
 
             Host.CheckNonEmpty(Inputs, nameof(Inputs));
             ctx.Writer.Write(Inputs.Length);
@@ -325,6 +371,8 @@ namespace Microsoft.ML.Transforms.Onnx
                 ctx.SaveNonEmptyString(info.Name);
                 ctx.Writer.WriteIntArray(info.Shape);
             }
+
+            ctx.Writer.Write(_options.RecursionLimit);
         }
 
         private protected override IRowMapper MakeRowMapper(DataViewSchema inputSchema) => new Mapper(this, inputSchema);
@@ -337,8 +385,13 @@ namespace Microsoft.ML.Transforms.Onnx
         {
             if (shape.Count > 0)
             {
-                return shape.Select(x => (x <= 0) ? 1 : x);
+                if (shape[0] < 0)
+                {
+                    shape[0] = 1;
+                }
+                return shape.Select(x => (x <= 0) ? 0 : x);
             }
+
             return new[] { 1 };
         }
 
@@ -396,20 +449,22 @@ namespace Microsoft.ML.Transforms.Onnx
                     var shape = inputNodeInfo.Shape;
 
                     var inputShape = AdjustDimensions(inputNodeInfo.Shape);
+
+                    // Only allow a single unkown size dimension
+                    if (inputShape.Where(x => x == 0).Count() > 1)
+                        throw new ArgumentOutOfRangeException(_parent.Inputs[i], "Only 1 unknown dimension is allowed");
+
                     _inputTensorShapes[i] = inputShape.ToList();
                     _inputOnnxTypes[i] = inputNodeInfo.TypeInOnnxRuntime;
 
                     var col = inputSchema.GetColumnOrNull(_parent.Inputs[i]);
                     if (!col.HasValue)
-                        throw Host.ExceptSchemaMismatch(nameof(inputSchema),"input", _parent.Inputs[i]);
+                        throw Host.ExceptSchemaMismatch(nameof(inputSchema), "input", _parent.Inputs[i]);
 
                     _inputColIndices[i] = col.Value.Index;
 
                     var type = inputSchema[_inputColIndices[i]].Type;
                     var vectorType = type as VectorDataViewType;
-
-                    if (vectorType != null && vectorType.Size == 0)
-                        throw Host.Except($"Variable length input columns not supported");
 
                     var itemType = type.GetItemType();
                     var nodeItemType = inputNodeInfo.DataViewType.GetItemType();
@@ -426,11 +481,14 @@ namespace Microsoft.ML.Transforms.Onnx
 
                     // If the column is one dimension we make sure that the total size of the Onnx shape matches.
                     // Compute the total size of the known dimensions of the shape.
-                    int valCount = inputShape.Where(x => x > 0).Aggregate((x, y) => x * y);
-                    // The column length should be divisible by this, so that the other dimensions can be integral.
-                    int typeValueCount = type.GetValueCount();
-                    if (typeValueCount % valCount != 0)
-                        throw Contracts.Except($"Input shape mismatch: Input '{_parent.Inputs[i]}' has shape {String.Join(",", inputShape)}, but input data is of length {typeValueCount}.");
+                    if (!inputShape.Any(x => x == 0))
+                    {
+                        int valCount = inputShape.Where(x => x > 0).Aggregate((x, y) => x * y);
+                        // The column length should be divisible by this, so that the other dimensions can be integral.
+                        int typeValueCount = type.GetValueCount();
+                        if (typeValueCount % valCount != 0)
+                            throw Contracts.Except($"Input shape mismatch: Input '{_parent.Inputs[i]}' has shape {String.Join(",", inputShape)}, but input data is of length {typeValueCount}.");
+                    }
                 }
             }
 
@@ -733,11 +791,17 @@ namespace Microsoft.ML.Transforms.Onnx
 
             private class NamedOnnxValueGetterVec<T> : INamedOnnxValueGetter
             {
+                private delegate NamedOnnxValue GetNamedOnnxVal();
+
                 private readonly ValueGetter<VBuffer<T>> _srcGetter;
                 private readonly OnnxShape _tensorShape;
                 private readonly string _colName;
                 private VBuffer<T> _vBuffer;
                 private VBuffer<T> _vBufferDense;
+                private readonly int _denominator;
+                private readonly int _zeroIndex;
+                private readonly GetNamedOnnxVal _namedOnnxValueDelegate;
+
                 public NamedOnnxValueGetterVec(DataViewRow input, int colIndex, OnnxShape tensorShape)
                 {
                     _srcGetter = input.GetGetter<VBuffer<T>>(input.Schema[colIndex]);
@@ -745,11 +809,38 @@ namespace Microsoft.ML.Transforms.Onnx
                     _colName = input.Schema[colIndex].Name;
                     _vBuffer = default;
                     _vBufferDense = default;
+                    _denominator = _tensorShape.Where(x => x > 0).Aggregate((a, x) => a * x);
+                    _zeroIndex = _tensorShape.IndexOf(0);
+
+                    var isKnownSize = (input.Schema[colIndex].Type as VectorDataViewType).IsKnownSize;
+
+                    if (isKnownSize)
+                        _namedOnnxValueDelegate = GetNamedOnnxValueKnownSize;
+                    else
+                        _namedOnnxValueDelegate = GetNamedOnnxValueUnknownSize;
                 }
                 public NamedOnnxValue GetNamedOnnxValue()
                 {
+                    return _namedOnnxValueDelegate();
+                }
+
+                private void GetNamedOnnxValueCore()
+                {
                     _srcGetter(ref _vBuffer);
                     _vBuffer.CopyToDense(ref _vBufferDense);
+                }
+
+                private NamedOnnxValue GetNamedOnnxValueKnownSize()
+                {
+                    GetNamedOnnxValueCore();
+                    return OnnxUtils.CreateNamedOnnxValue(_colName, _vBufferDense.GetValues(), _tensorShape);
+                }
+
+                private NamedOnnxValue GetNamedOnnxValueUnknownSize()
+                {
+                    GetNamedOnnxValueCore();
+
+                    _tensorShape[_zeroIndex] = _vBufferDense.Length / _denominator;
                     return OnnxUtils.CreateNamedOnnxValue(_colName, _vBufferDense.GetValues(), _tensorShape);
                 }
             }
@@ -807,10 +898,11 @@ namespace Microsoft.ML.Transforms.Onnx
         /// <param name="gpuDeviceId">Optional GPU device ID to run execution on. Null for CPU.</param>
         /// <param name="fallbackToCpu">If GPU error, raise exception or fallback to CPU.</param>
         /// <param name="shapeDictionary"></param>
+        /// <param name="recursionLimit">Optional, specifies the Protobuf CodedInputStream recursion limit. Default value is 100.</param>
         [BestFriend]
         internal OnnxScoringEstimator(IHostEnvironment env, string modelFile, int? gpuDeviceId = null, bool fallbackToCpu = false,
-            IDictionary<string, int[]> shapeDictionary = null)
-            : this(env, new OnnxTransformer(env, new string[] { }, new string[] { }, modelFile, gpuDeviceId, fallbackToCpu, shapeDictionary))
+            IDictionary<string, int[]> shapeDictionary = null, int recursionLimit = 100)
+            : this(env, new OnnxTransformer(env, new string[] { }, new string[] { }, modelFile, gpuDeviceId, fallbackToCpu, shapeDictionary, recursionLimit))
         {
         }
 
@@ -825,9 +917,13 @@ namespace Microsoft.ML.Transforms.Onnx
         /// <param name="gpuDeviceId">Optional GPU device ID to run execution on. Null for CPU.</param>
         /// <param name="fallbackToCpu">If GPU error, raise exception or fallback to CPU.</param>
         /// <param name="shapeDictionary"></param>
+        /// <param name="recursionLimit">Optional, specifies the Protobuf CodedInputStream recursion limit. Default value is 100.</param>
+        /// <param name="interOpNumThreads">Controls the number of threads used to parallelize the execution of the graph (across nodes).</param>
+        /// <param name="intraOpNumThreads">Controls the number of threads to use to run the model.</param>
         internal OnnxScoringEstimator(IHostEnvironment env, string[] outputColumnNames, string[] inputColumnNames, string modelFile,
-            int? gpuDeviceId = null, bool fallbackToCpu = false, IDictionary<string, int[]> shapeDictionary = null)
-           : this(env, new OnnxTransformer(env, outputColumnNames, inputColumnNames, modelFile, gpuDeviceId, fallbackToCpu, shapeDictionary))
+            int? gpuDeviceId = null, bool fallbackToCpu = false, IDictionary<string, int[]> shapeDictionary = null, int recursionLimit = 100,
+            int? interOpNumThreads = null, int? intraOpNumThreads = null)
+           : this(env, new OnnxTransformer(env, outputColumnNames, inputColumnNames, modelFile, gpuDeviceId, fallbackToCpu, shapeDictionary, recursionLimit, interOpNumThreads, intraOpNumThreads))
         {
         }
 
@@ -855,13 +951,13 @@ namespace Microsoft.ML.Transforms.Onnx
                 // Get the i-th IDataView input column's name in the underlying ONNX transformer.
                 var input = Transformer.Inputs[i];
 
+                // Only allow 1 unknown dimension
+                if (Transformer.Model.ModelInfo.InputsInfo[i].Shape.Where(x => x == 0).Count() > 1)
+                    throw new ArgumentOutOfRangeException(input, "Only 1 unknown dimension is allowed");
+
                 // Make sure inputSchema contains the i-th input column.
                 if (!inputSchema.TryFindColumn(input, out var col))
                     throw Host.ExceptSchemaMismatch(nameof(inputSchema), "input", input);
-
-                // Make sure that the input columns in inputSchema are fixed shape tensors.
-                if (col.Kind == SchemaShape.Column.VectorKind.VariableVector)
-                    throw Host.ExceptSchemaMismatch(nameof(inputSchema), "input", input, "vector", col.GetTypeString());
 
                 var inputsInfo = Transformer.Model.ModelInfo.InputsInfo;
                 var idx = Transformer.Model.ModelInfo.InputNames.IndexOf(input);

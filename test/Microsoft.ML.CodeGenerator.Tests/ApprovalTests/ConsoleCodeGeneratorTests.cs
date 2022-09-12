@@ -39,6 +39,10 @@ namespace mlnet.Tests
 
         public ConsoleCodeGeneratorTests(ITestOutputHelper output) : base(output)
         {
+            if (System.Environment.GetEnvironmentVariable("HELIX_CORRELATION_ID") != null)
+            {
+                Approvals.UseAssemblyLocationForApprovedFiles();
+            }
         }
 
         [Fact]
@@ -225,7 +229,7 @@ namespace mlnet.Tests
                 StablePackageVersion = "stableversion",
                 UnstablePackageVersion = "unstableversion",
                 OnnxModelName = @"/path/to/onnxModel",
-                OnnxRuntimePacakgeVersion = "1.2.3",
+                OnnxRuntimePackageVersion = "1.2.3",
                 IsAzureAttach = true,
                 IsObjectDetection = false,
                 IsImage = true,
@@ -261,7 +265,7 @@ namespace mlnet.Tests
                 StablePackageVersion = "stableversion",
                 UnstablePackageVersion = "unstableversion",
                 OnnxModelName = @"/path/to/onnxModel",
-                OnnxRuntimePacakgeVersion = @"1.2.3",
+                OnnxRuntimePackageVersion = @"1.2.3",
                 IsAzureAttach = true,
                 IsImage = false,
                 IsObjectDetection = true,
@@ -301,7 +305,7 @@ namespace mlnet.Tests
                 StablePackageVersion = "StablePackageVersion",
                 UnstablePackageVersion = "UnstablePackageVersion",
                 OnnxModelName = @"\path\to\onnx",
-                OnnxRuntimePacakgeVersion = "1.2.3",
+                OnnxRuntimePackageVersion = "1.2.3",
                 IsAzureAttach = true,
                 IsImage = false,
                 IsObjectDetection = false,
@@ -324,7 +328,7 @@ namespace mlnet.Tests
         public void ModelInputClassTest()
         {
             // Test with datasets whose columns are sanitized and not sanitized. The columns of a dataset are considered
-            // sanitized if the column names are all unique and distinct, irrespective of capitalization. 
+            // sanitized if the column names are all unique and distinct, irrespective of capitalization.
             (var pipelineSanitized, var columnInferenceSanitized, var mappingSanitized) = this.GetMockedAzurePipelineAndInference();
             TestModelInput(pipelineSanitized, columnInferenceSanitized, mappingSanitized, "sanitized");
             (var pipelineUnsatinized, var columnInferenceUnsatinized, var mappingUnsatinized) = this.GetMockedAzurePipelineAndInferenceUnsanitizedColumnNames();
@@ -578,7 +582,8 @@ namespace mlnet.Tests
                 this._columnInference = new ColumnInferenceResults()
                 {
                     TextLoaderOptions = textLoaderArgs,
-                    ColumnInformation = new ColumnInformation() {
+                    ColumnInformation = new ColumnInformation()
+                    {
                         LabelColumnName = "Label",
                         UserIdColumnName = "userId",
                         ItemIdColumnName = "movieId"
@@ -747,7 +752,7 @@ namespace mlnet.Tests
                 this._columnInference = new ColumnInferenceResults()
                 {
                     TextLoaderOptions = textLoaderArgs,
-                    ColumnInformation = new ColumnInformation() { LabelColumnName = "Label" , GroupIdColumnName = "GroupId"}
+                    ColumnInformation = new ColumnInformation() { LabelColumnName = "Label", GroupIdColumnName = "GroupId" }
                 };
             }
 
@@ -1135,7 +1140,7 @@ namespace mlnet.Tests
                 ModelName = "x:\\models\\model.zip",
                 StablePackageVersion = StablePackageVersion,
                 UnstablePackageVersion = UnstablePackageVersion,
-                OnnxRuntimePacakgeVersion = "1.2.3",
+                OnnxRuntimePackageVersion = "1.2.3",
             };
         }
     }

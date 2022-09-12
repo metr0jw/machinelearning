@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Reflection;
 using Microsoft.ML.Internal.Utilities;
 using Microsoft.ML.Runtime;
 
@@ -77,7 +79,7 @@ namespace Microsoft.ML
         }
 
         // These are the open entries that may contain streams into our DirTemp.
-        private List<Entry> _open;
+        private readonly List<Entry> _open;
 
         private bool _disposed;
 
@@ -111,14 +113,18 @@ namespace Microsoft.ML
             PathMap = new ConcurrentDictionary<string, string>();
             _open = new List<Entry>();
             if (needDir)
-                DirTemp = GetShortTempDir();
+                DirTemp = GetShortTempDir(ectx);
             else
                 GC.SuppressFinalize(this);
         }
 
-        private static string GetShortTempDir()
+        private static string GetShortTempDir(IExceptionContext ectx)
         {
-            var path = Path.Combine(Path.GetFullPath(Path.GetTempPath()), "ml_dotnet", Path.GetRandomFileName());
+            string tempPath = ectx is IHostEnvironmentInternal iHostInternal ?
+                iHostInternal.TempFilePath :
+                Path.GetTempPath();
+
+            string path = Path.Combine(Path.GetFullPath(tempPath), "ml_dotnet", Path.GetRandomFileName());
             Directory.CreateDirectory(path);
             return path;
         }
@@ -285,10 +291,10 @@ namespace Microsoft.ML
             Contracts.CheckValueOrNull(ectx);
             ectx.CheckValue(stream, nameof(stream));
             var rep = new RepositoryWriter(stream, ectx, useFileSystem);
-            var versionInfo = FileVersionInfo.GetVersionInfo(typeof(RepositoryWriter).Assembly.Location);
+
             using (var ent = rep.CreateEntry(DirTrainingInfo, "Version.txt"))
             using (var writer = Utils.OpenWriter(ent.Stream))
-                writer.WriteLine(versionInfo.ProductVersion);
+                writer.WriteLine(GetProductVersion());
             return rep;
         }
 
@@ -410,16 +416,34 @@ namespace Microsoft.ML
             Flush();
             Dispose(true);
         }
+
+        private static string GetProductVersion()
+        {
+            var assembly = typeof(RepositoryWriter).Assembly;
+
+            var assemblyInternationalVersionAttribute = assembly.CustomAttributes.FirstOrDefault(a =>
+                    a.AttributeType == typeof(AssemblyInformationalVersionAttribute));
+
+            if (assemblyInternationalVersionAttribute == null)
+            {
+                throw new ApplicationException($"Cannot determine product version from assembly {assembly.FullName}.");
+            }
+
+            return assemblyInternationalVersionAttribute.ConstructorArguments
+                .First()
+                .Value
+                .ToString();
+        }
     }
 
     [BestFriend]
     internal sealed class RepositoryReader : Repository
     {
-        private ZipArchive _archive;
+        private readonly ZipArchive _archive;
 
         // Maps from a normalized path to the entry in the _archive. This is needed since
         // a zip might use / or \ for directory separation.
-        private Dictionary<string, ZipArchiveEntry> _entries;
+        private readonly Dictionary<string, ZipArchiveEntry> _entries;
 
         public static RepositoryReader Open(Stream stream, IExceptionContext ectx = null, bool useFileSystem = true)
         {
@@ -491,7 +515,7 @@ namespace Microsoft.ML
                 if (!_entries.TryGetValue(pathEnt, out entry))
                 {
                     //Read old zip file that use backslash in filename
-                    var pathEntTmp = pathEnt.Replace("/","\\");
+                    var pathEntTmp = pathEnt.Replace("/", "\\");
                     if (!_entries.TryGetValue(pathEntTmp, out entry))
                     {
                         return null;

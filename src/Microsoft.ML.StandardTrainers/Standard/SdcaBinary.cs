@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -416,7 +416,7 @@ namespace Microsoft.ML.Trainers
             {
                 // Note: At this point, 'count' may be less than the actual count of training examples.
                 // We initialize the hash table with this partial size to avoid unnecessary rehashing.
-                // However, it does not mean there are exactly 'count' many trainining examples.
+                // However, it does not mean there are exactly 'count' many training examples.
                 // Necessary rehashing will still occur as the hash table grows.
                 idToIdx = new IdToIdxLookup(count);
                 // Resetting 'count' to zero.
@@ -500,7 +500,7 @@ namespace Microsoft.ML.Trainers
                 if (dualsLength <= Utils.ArrayMaxSize)
                 {
                     // The dual variables fit into a standard float[].
-                    // Also storing invariants in a starndard float[].
+                    // Also storing invariants in a standard float[].
                     duals = new StandardArrayDualsTable((int)dualsLength);
                     int invariantsLength = (int)idLoMax + 1;
                     Contracts.Assert(invariantsLength <= Utils.ArrayMaxSize);
@@ -559,7 +559,7 @@ namespace Microsoft.ML.Trainers
             // If we favor storing the invariants, precompute the invariants now.
             if (invariants != null)
             {
-                Contracts.Assert((idToIdx == null & ((long)idLoMax + 1) * weightSetCount <= Utils.ArrayMaxSize) | (idToIdx != null & count * weightSetCount <= Utils.ArrayMaxSize));
+                Contracts.Assert((idToIdx == null && ((long)idLoMax + 1) * weightSetCount <= Utils.ArrayMaxSize) || (idToIdx != null && count * weightSetCount <= Utils.ArrayMaxSize));
                 Func<DataViewRowId, long, long> getIndexFromIdAndRow = GetIndexFromIdAndRowGetter(idToIdx, biasReg.Length);
                 int invariantCoeff = weightSetCount == 1 ? 1 : 2;
                 using (var cursor = cursorFactory.Create())
@@ -571,7 +571,7 @@ namespace Microsoft.ML.Trainers
                     {
                         Host.CheckAlive();
                         long longIdx = getIndexFromIdAndRow(cursor.Id, row);
-                        Contracts.Assert(0 <= longIdx & longIdx < invariants.Length, $"longIdx={longIdx}, invariants.Length={invariants.Length}");
+                        Contracts.Assert(0 <= longIdx && longIdx < invariants.Length, $"longIdx={longIdx}, invariants.Length={invariants.Length}");
                         int idx = (int)longIdx;
                         var features = cursor.Features;
                         var normSquared = VectorUtils.NormSquared(features);
@@ -581,7 +581,7 @@ namespace Microsoft.ML.Trainers
                         if (featureNormSquared != null)
                             featureNormSquared[idx] = normSquared;
 
-                        // REVIEW: For log-loss, the default loss function for binary classifiation, a large number
+                        // REVIEW: For log-loss, the default loss function for binary classification, a large number
                         // of the invariants are 1. Maybe worth to consider a more efficient way to store the invariants
                         // for log-loss.
                         invariants[idx] = Loss.ComputeDualUpdateInvariant(invariantCoeff * normSquared * lambdaNInv * GetInstanceWeight(cursor));
@@ -600,7 +600,7 @@ namespace Microsoft.ML.Trainers
                 // Note that P.Invoke does not ensure that the actions executes in order even if maximum number of threads is set to 1.
                 if (numThreads == 1)
                 {
-                    // The synchorized SDCA procedure.
+                    // The synchronized SDCA procedure.
                     for (iter = 0; iter < maxIterations; iter++)
                     {
                         if (converged)
@@ -833,7 +833,7 @@ namespace Microsoft.ML.Trainers
                         var output = WDot(in features, in weights[0], biasReg[0] + biasUnreg[0]);
                         var dualUpdate = Loss.DualUpdate(output, label, dual, invariant, numThreads);
 
-                        // The successive over-relaxation apporach to adjust the sum of dual variables (biasReg) to zero.
+                        // The successive over-relaxation approach to adjust the sum of dual variables (biasReg) to zero.
                         // Reference to details: http://stat.rutgers.edu/home/tzhang/papers/ml02_dual.pdf pp. 16-17.
                         var adjustment = l1ThresholdZero ? lr * biasReg[0] : lr * l1IntermediateBias[0];
                         dualUpdate -= adjustment;
@@ -1047,7 +1047,7 @@ namespace Microsoft.ML.Trainers
         /// </summary>
         private sealed class StandardArrayDualsTable : DualsTableBase
         {
-            private float[] _duals;
+            private readonly float[] _duals;
 
             public override long Length => _duals.Length;
 
@@ -1074,7 +1074,7 @@ namespace Microsoft.ML.Trainers
         /// </summary>
         private sealed class BigArrayDualsTable : DualsTableBase
         {
-            private BigArray<float> _duals;
+            private readonly BigArray<float> _duals;
 
             public override long Length => _duals.Length;
 
@@ -1196,7 +1196,7 @@ namespace Microsoft.ML.Trainers
             private long _count;
 
             // The entries.
-            private BigArray<Entry> _entries;
+            private readonly BigArray<Entry> _entries;
 
             /// <summary>
             /// Gets the count of id entries.
@@ -1251,7 +1251,7 @@ namespace Microsoft.ML.Trainers
             /// </summary>
             private long GetIndexCore(DataViewRowId val, long iit)
             {
-                Contracts.Assert(0 <= iit & iit < _rgit.Length);
+                Contracts.Assert(0 <= iit && iit < _rgit.Length);
                 long it = _rgit[iit];
                 while (it >= 0)
                 {
@@ -1330,11 +1330,11 @@ namespace Microsoft.ML.Trainers
             {
                 Contracts.AssertValue(_rgit);
                 Contracts.Assert(_rgit.Length > 0);
-                Contracts.Assert(0 <= _count & _count <= _entries.Length);
+                Contracts.Assert(0 <= _count && _count <= _entries.Length);
 
                 // The number of buckets should be at least the number of items, unless we're reached the
                 // biggest number of buckets allowed.
-                Contracts.Assert(_rgit.Length >= _count | _rgit.Length == HashHelpers.MaxPrime);
+                Contracts.Assert(_rgit.Length >= _count || _rgit.Length == HashHelpers.MaxPrime);
             }
 
             [Conditional("DUMP_STATS")]
@@ -1796,7 +1796,7 @@ namespace Microsoft.ML.Trainers
                     NumberDataViewType.Single,
                     false,
                     new SchemaShape(AnnotationUtils.GetTrainerOutputAnnotation(true))));
-            };
+            }
 
             return outCols.ToArray();
         }
@@ -2161,7 +2161,7 @@ namespace Microsoft.ML.Trainers
                     int iter = 0;
                     pch.SetHeader(new ProgressHeader(new[] { "Loss", "Improvement" }, new[] { "iterations" }),
                         entry => entry.SetProgress(0, iter, _options.NumberOfIterations));
-                    // Synchorized SGD.
+                    // Synchronized SGD.
                     for (int i = 0; i < _options.NumberOfIterations; i++)
                     {
                         iter = i;
@@ -2423,7 +2423,7 @@ namespace Microsoft.ML.Trainers
         }
 
         /// <summary>
-        /// <see cref="LogLoss"/> leads to logistic regression which naturally supports probablity output. For other loss functions,
+        /// <see cref="LogLoss"/> leads to logistic regression which naturally supports probability output. For other loss functions,
         /// a calibrator would be added after <see cref="SgdBinaryTrainerBase{TModelParameters}.TrainCore(IChannel, RoleMappedData, LinearModelParameters, int)"/>
         /// finishing its job. Therefore, we always have three output columns in the legacy world.
         /// </summary>

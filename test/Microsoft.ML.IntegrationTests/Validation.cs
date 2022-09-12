@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using Microsoft.ML.Data;
 using Microsoft.ML.IntegrationTests.Datasets;
+using Microsoft.ML.TestFramework.Attributes;
 using Microsoft.ML.TestFrameworkCommon;
 using Microsoft.ML.Trainers;
 using Microsoft.ML.Trainers.FastTree;
@@ -28,7 +29,7 @@ namespace Microsoft.ML.IntegrationTests
         /// pipelines on in-fold data, (3) scoring on the out-fold data, (4) returning the set of
         /// metrics, trained pipelines, and scored test data for each fold.
         /// </summary>
-        [Fact]
+        [NativeDependencyFact("MklImports")]
         public void CrossValidation()
         {
             var mlContext = new MLContext(seed: 1);

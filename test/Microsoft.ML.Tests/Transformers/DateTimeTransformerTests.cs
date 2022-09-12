@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.ML.Data;
-using Microsoft.ML.RunTests;
-using Microsoft.ML.Featurizers;
 using System;
+using Microsoft.ML.Data;
+using Microsoft.ML.Featurizers;
+using Microsoft.ML.RunTests;
+using Microsoft.ML.TestFramework.Attributes;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.ML.TestFramework.Attributes;
 
 namespace Microsoft.ML.Tests.Transformers
 {
@@ -23,7 +23,7 @@ namespace Microsoft.ML.Tests.Transformers
             public long date;
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void CorrectNumberOfColumnsAndSchema()
         {
             MLContext mlContext = new MLContext(1);
@@ -90,7 +90,7 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void CanUseDateFromColumnLongType()
         {
             // Date - 2025 June 30
@@ -133,12 +133,12 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void CanUseDateFromColumnDateTimeType()
         {
             // Date - 2025 June 30
             MLContext mlContext = new MLContext(1);
-            var dataList = new[] { new { date = new DateTime(2025,6,30)} };
+            var dataList = new[] { new { date = new DateTime(2025, 6, 30) } };
             var data = mlContext.Data.LoadFromEnumerable(dataList);
 
             // Build the pipeline, fit, and transform it.
@@ -176,7 +176,7 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void HolidayTest()
         {
             // Date - 2025 June 30
@@ -200,7 +200,7 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void ManyRowsTestLongType()
         {
             // Date - 2025 June 30
@@ -247,7 +247,7 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void ManyRowsTestDateTimeType()
         {
             // Date - 2025 June 30
@@ -293,7 +293,7 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void EntryPointTest()
         {
             // Date - 2025 June 30
@@ -341,7 +341,7 @@ namespace Microsoft.ML.Tests.Transformers
             Done();
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void LoadFromFileTest()
         {
             // File contents are:
@@ -407,7 +407,7 @@ namespace Microsoft.ML.Tests.Transformers
             public DateTime Date { get; set; }
         }
 
-        [NotCentOS7Fact]
+        [FeaturizersFact]
         public void LoadFromFileWithCustomMappingTest()
         {
             // File contents are:

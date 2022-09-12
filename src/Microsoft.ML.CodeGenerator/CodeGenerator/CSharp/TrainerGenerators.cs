@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -538,7 +538,7 @@ namespace Microsoft.ML.CodeGenerator.CSharp
 
         internal class OneVersusAll : TrainerGeneratorBase
         {
-            private PipelineNode _node;
+            private readonly PipelineNode _node;
             private string[] _binaryTrainerUsings;
 
             //ClassName of the trainer

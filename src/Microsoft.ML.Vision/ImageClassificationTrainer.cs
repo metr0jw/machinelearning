@@ -222,7 +222,7 @@ namespace Microsoft.ML.Vision
             /// <summary>
             /// The metric to be monitored (eg Accuracy, Loss).
             /// </summary>
-            private EarlyStoppingMetric _metric;
+            private readonly EarlyStoppingMetric _metric;
 
             /// <summary>
             /// Minimum change in the monitored quantity to be considered as an improvement.
@@ -258,7 +258,10 @@ namespace Microsoft.ML.Vision
                 if (metric == EarlyStoppingMetric.Accuracy)
                     CheckIncreasing = true;
                 else if (metric == EarlyStoppingMetric.Loss)
+                {
                     CheckIncreasing = false;
+                    _bestMetricValue = Single.MaxValue;
+                }
             }
 
             /// <summary>
@@ -479,7 +482,7 @@ namespace Microsoft.ML.Vision
         private Tensor _resizedImage;
         private string _jpegDataTensorName;
         private string _resizedImageTensorName;
-        private string _inputTensorName;
+        private readonly string _inputTensorName;
         private string _softmaxTensorName;
         private readonly string _checkpointPath;
         private readonly string _bottleneckOperationName;
@@ -487,7 +490,7 @@ namespace Microsoft.ML.Vision
         private readonly bool _cleanupWorkspace;
         private int _classCount;
         private Graph Graph => _session.graph;
-        private static readonly string _resourcePath = Path.Combine(Path.GetTempPath(), "MLNET");
+        private readonly string _resourcePath;
         private readonly string _sizeFile;
 
         /// <summary>
@@ -531,10 +534,11 @@ namespace Microsoft.ML.Vision
             Host.CheckNonEmpty(options.ScoreColumnName, nameof(options.ScoreColumnName));
             Host.CheckNonEmpty(options.PredictedLabelColumnName, nameof(options.PredictedLabelColumnName));
             tf.compat.v1.disable_eager_execution();
+            _resourcePath = Path.Combine(((IHostEnvironmentInternal)env).TempFilePath, "MLNET");
 
             if (string.IsNullOrEmpty(options.WorkspacePath))
             {
-                options.WorkspacePath = GetTemporaryDirectory();
+                options.WorkspacePath = GetTemporaryDirectory(env);
                 _cleanupWorkspace = true;
             }
 
@@ -701,7 +705,7 @@ namespace Microsoft.ML.Vision
                 generateValidationSet = needValidationSet && !validationSetPresent;
             }
 
-            if(generateValidationSet && _options.ReuseTrainSetBottleneckCachedValues &&
+            if (generateValidationSet && _options.ReuseTrainSetBottleneckCachedValues &&
                 !_options.ReuseValidationSetBottleneckCachedValues)
             {
                 // Not sure if it makes sense to support this scenario.
@@ -780,7 +784,7 @@ namespace Microsoft.ML.Vision
 
         internal sealed class ImageProcessor
         {
-            private Runner _imagePreprocessingRunner;
+            private readonly Runner _imagePreprocessingRunner;
 
             public ImageProcessor(Session session, string jpegDataTensorName, string resizeImageTensorName)
             {
@@ -1078,7 +1082,7 @@ namespace Microsoft.ML.Vision
             Stream trainSetFeatureReader, byte[] labelBufferBytes, byte[] featuresBufferBytes,
             int labelBufferSizeInBytes, int featureBufferSizeInBytes, int featureFileRecordSize,
             LearningRateScheduler learningRateScheduler, DnnTrainState trainState, Runner runner,
-            IntPtr featureBufferPtr, IntPtr labelBufferPtr, Action<Tensor[],ImageClassificationMetrics> metricsAggregator)
+            IntPtr featureBufferPtr, IntPtr labelBufferPtr, Action<Tensor[], ImageClassificationMetrics> metricsAggregator)
         {
             int labelFileBytesRead;
             int featuresFileBytesRead;
@@ -1134,7 +1138,7 @@ namespace Microsoft.ML.Vision
             {
                 Host.CheckAlive();
             }
-            catch(OperationCanceledException)
+            catch (OperationCanceledException)
             {
                 TryCleanupTemporaryWorkspace();
                 throw;
@@ -1319,7 +1323,7 @@ namespace Microsoft.ML.Vision
 
         }
 
-        private static TensorFlowSessionWrapper LoadTensorFlowSessionFromMetaGraph(IHostEnvironment env, Architecture arch)
+        private TensorFlowSessionWrapper LoadTensorFlowSessionFromMetaGraph(IHostEnvironment env, Architecture arch)
         {
             var modelFileName = ModelFileName[arch];
             var modelFilePath = Path.Combine(_resourcePath, modelFileName);
@@ -1446,8 +1450,8 @@ namespace Microsoft.ML.Vision
             ctx.Writer.Write(_imagePreprocessorTensorOutput);
             ctx.Writer.Write(_graphInputTensor);
             ctx.Writer.Write(_graphOutputTensor);
-            using(var status = new Status())
-            using(var buffer = _session.graph.ToGraphDef(status))
+            using (var status = new Status())
+            using (var buffer = _session.graph.ToGraphDef(status))
             {
                 ctx.SaveBinaryStream("TFModel", w =>
                 {
@@ -1459,8 +1463,8 @@ namespace Microsoft.ML.Vision
 
         private class Classifier
         {
-            private Runner _runner;
-            private ImageClassificationTrainer.ImageProcessor _imageProcessor;
+            private readonly Runner _runner;
+            private readonly ImageClassificationTrainer.ImageProcessor _imageProcessor;
 
             public Classifier(ImageClassificationModelParameters model)
             {

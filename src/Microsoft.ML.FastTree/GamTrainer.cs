@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -204,7 +204,7 @@ namespace Microsoft.ML.Trainers.FastTree
             Host.CheckParam(options.NumberOfThreads == null || options.NumberOfThreads > 0, nameof(options.NumberOfThreads), "Must be positive.");
             Host.CheckParam(0 <= options.EntropyCoefficient && options.EntropyCoefficient <= 1, nameof(options.EntropyCoefficient), "Must be in [0, 1].");
             Host.CheckParam(0 <= options.GainConfidenceLevel && options.GainConfidenceLevel < 1, nameof(options.GainConfidenceLevel), "Must be in [0, 1).");
-            Host.CheckParam(0 < options.MaximumBinCountPerFeature, nameof(options.MaximumBinCountPerFeature), "Must be posittive.");
+            Host.CheckParam(0 < options.MaximumBinCountPerFeature, nameof(options.MaximumBinCountPerFeature), "Must be positive.");
             Host.CheckParam(0 < options.NumberOfIterations, nameof(options.NumberOfIterations), "Must be positive.");
             Host.CheckParam(0 < options.MinimumExampleCountPerLeaf, nameof(options.MinimumExampleCountPerLeaf), "Must be positive.");
 
@@ -608,7 +608,7 @@ namespace Microsoft.ML.Trainers.FastTree
 
         private class LeafSplitHelper : ILeafSplitStatisticsCalculator
         {
-            private bool _hasWeights;
+            private readonly bool _hasWeights;
 
             public LeafSplitHelper(bool hasWeights)
             {

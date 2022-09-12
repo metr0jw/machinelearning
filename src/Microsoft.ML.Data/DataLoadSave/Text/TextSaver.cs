@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -221,7 +221,7 @@ namespace Microsoft.ML.Data.IO
         {
             private readonly ValueGetter<T> _getSrc;
             private T _src;
-            private string _columnName;
+            private readonly string _columnName;
 
             public ValueWriter(DataViewRowCursor cursor, PrimitiveDataViewType type, int source, char sep)
                 : base(type, source, sep)
@@ -280,23 +280,23 @@ namespace Microsoft.ML.Data.IO
             sep = sep.ToLowerInvariant();
             switch (sep)
             {
-            case "space":
-            case " ":
-                return ' ';
-            case "tab":
-            case "\t":
-                return '\t';
-            case "comma":
-            case ",":
-                return ',';
-            case "semicolon":
-            case ";":
-                return ';';
-            case "bar":
-            case "|":
-                return '|';
-            default:
-                throw Contracts.ExceptUserArg(nameof(Arguments.Separator), "Invalid separator - must be: space, tab, comma, semicolon, or bar");
+                case "space":
+                case " ":
+                    return ' ';
+                case "tab":
+                case "\t":
+                    return '\t';
+                case "comma":
+                case ",":
+                    return ',';
+                case "semicolon":
+                case ";":
+                    return ';';
+                case "bar":
+                case "|":
+                    return '|';
+                default:
+                    throw Contracts.ExceptUserArg(nameof(Arguments.Separator), "Invalid separator - must be: space, tab, comma, semicolon, or bar");
             }
         }
 
@@ -307,19 +307,19 @@ namespace Microsoft.ML.Data.IO
         {
             switch (separator)
             {
-            case ' ':
-                return "space";
-            case '\t':
-                return "tab";
-            case ',':
-                return "comma";
-            case ';':
-                return "semicolon";
-            case '|':
-                return "bar";
+                case ' ':
+                    return "space";
+                case '\t':
+                    return "tab";
+                case ',':
+                    return "comma";
+                case ';':
+                    return "semicolon";
+                case '|':
+                    return "bar";
 
-            default:
-                return separator.ToString();
+                default:
+                    return separator.ToString();
             }
         }
 
@@ -535,8 +535,8 @@ namespace Microsoft.ML.Data.IO
             private int _dstPrev;
 
             // Map from column to starting destination index and slot.
-            private int[] _mpcoldst;
-            private int[] _mpcolslot;
+            private readonly int[] _mpcoldst;
+            private readonly int[] _mpcolslot;
 
             // "slot" is an index into _mpslotdst and _mpslotichLim. _mpslotdst is the sequence of
             // destination indices. _mpslotichLim is the sequence of upper bounds on the characters

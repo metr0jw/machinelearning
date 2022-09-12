@@ -58,7 +58,7 @@ namespace Microsoft.ML.Data
             Contracts.CheckValue(env, nameof(env));
             env.CheckValue(data, nameof(data));
             env.CheckValue(mapper, nameof(mapper));
-            if (args.Top< 0)
+            if (args.Top < 0)
                 throw env.Except($"Number of top contribution must be non negative");
             if (args.Bottom < 0)
                 throw env.Except($"Number of bottom contribution must be non negative");
@@ -299,7 +299,7 @@ namespace Microsoft.ML.Data
             private readonly BindableMapper _parent;
             private readonly DataViewSchema _outputSchema;
             private readonly DataViewSchema _outputGenericSchema;
-            private VBuffer<ReadOnlyMemory<char>> _slotNames;
+            private readonly VBuffer<ReadOnlyMemory<char>> _slotNames;
 
             public RoleMappedSchema InputRoleMappedSchema { get; }
 
